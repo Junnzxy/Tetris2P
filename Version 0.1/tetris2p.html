@@ -6,7 +6,7 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap');
-        :root { --accent: #007aff; --danger: #ff3b30; --glass: rgba(255, 255, 255, 0.05); }
+        :root { --accent: #007aff; --danger: #ff3b30; --success: #4cd964; --glass: rgba(255, 255, 255, 0.05); }
         
         body { 
             background: #050505; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; 
@@ -322,7 +322,16 @@ function receiveAttack(lines) {
 
 function showEndScreen(msg, sc) {
     isGameOver = true;
-    document.getElementById('res-msg').innerText = msg;
+    const resMsg = document.getElementById('res-msg');
+    resMsg.innerText = msg;
+    
+    // Logika warna teks dinamis berdasarkan hasil
+    if (msg.includes('WIN') || msg.includes('VICTORY')) {
+        resMsg.style.color = 'var(--success)';
+    } else {
+        resMsg.style.color = 'var(--danger)';
+    }
+
     document.getElementById('final-sc').innerText = sc;
     const actions = document.getElementById('end-actions');
     actions.innerHTML = '';
@@ -394,7 +403,7 @@ function gameLoop(time = 0) {
     dropCounter += dt; moveCounter += dt;
     if (moveCounter > 90) {
         if (keys['ArrowLeft']) { player.pos.x--; if(collide(arena, player)) player.pos.x++; else { playSound('move'); sendData(); } }
-        if (keys['ArrowRight']) { player.pos.x++; if(collide(arena, player)) player.pos.x--; else { playSound('move'); sendData(); } }
+        if (keys['ArrowRight']) { player.pos.x++; if(collide(arena, player)) { player.pos.x--; } else { playSound('move'); sendData(); } }
         if (keys['ArrowDown']) { player.pos.y++; if(collide(arena, player)) { player.pos.y--; merge(); } else { playSound('move'); sendData(); } }
         moveCounter = 0;
     }
