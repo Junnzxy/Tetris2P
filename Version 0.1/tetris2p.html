@@ -261,7 +261,7 @@ function drawGhost() {
     const ghost = { pos: {...player.pos}, matrix: player.matrix };
     while (!collide(arena, ghost)) { ghost.pos.y++; }
     ghost.pos.y--;
-    lCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    lCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     ghost.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) lCtx.fillRect(x + ghost.pos.x, y + ghost.pos.y, 0.95, 0.95); }));
 }
 
