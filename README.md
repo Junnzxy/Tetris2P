@@ -10,6 +10,7 @@ Proyek ini bermula dari keinginan untuk menciptakan lingkungan permainan yang ri
 - P2P Multiplayer: Bertanding dengan teman secara real-time menggunakan sistem ID unik tanpa memerlukan server perantara yang kompleks.
 - Procedural SFX: Efek suara yang dihasilkan secara sintetis menggunakan Web Audio API.
 - Minimalist UI: Antarmuka berbasis glassmorphism yang bersih dan modern, dirancang menggunakan variabel CSS.
+- Ada 4 level yang bisa di pilih di solo mode, yaitu Easy, Medium, Hard, dan WNI.
 
 ### Teknologi yang Digunakan
 > Proyek ini dibangun sepenuhnya menggunakan Vanilla Web Stack untuk memastikan kecepatan dan portabilitas maksimal:
