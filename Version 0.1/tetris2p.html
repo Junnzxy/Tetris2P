@@ -2,291 +2,146 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sovereign Tetris</title>
+    <title>Sovereign Tetris Final Fixed</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap');
         :root { --accent: #007aff; --danger: #ff3b30; --success: #4cd964; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: #050505; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
         
-        body { 
-            background: #050505; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            height: 100vh; margin: 0; overflow: hidden;
-        }
-
-        #lobby-overlay, #setup-overlay, #game-over-overlay, #pause-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px);
-        }
-        
+        #lobby-overlay, #setup-overlay, #game-over-overlay, #pause-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
         #setup-overlay, #game-over-overlay, #pause-overlay { display: none; }
-
-        .card { 
-            background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); 
-            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 320px;
-        }
-
-        .card.alarm-active { animation: shake 0.2s infinite; border-color: var(--danger); }
-
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            40% { transform: translate(3px, 2px) rotate(-1deg); }
-            60% { transform: translate(-1px, -1px) rotate(1deg); }
-            80% { transform: translate(-3px, 1px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-
-        input { 
-            background: #111; border: 1px solid #333; color: #fff; padding: 15px; 
-            border-radius: 12px; margin: 15px 0; width: 80%; font-size: 16px; text-align: center; outline: none;
-        }
-        .btn { 
-            background: #fff; color: #000; border: none; padding: 15px 30px; 
-            border-radius: 12px; cursor: pointer; font-weight: 800; transition: 0.3s; margin: 8px; width: 80%;
-        }
-        .btn:hover:not(:disabled) { transform: scale(1.05); background: var(--accent); color: #fff; }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-outline { background: transparent; color: #fff; border: 1px solid #fff; }
-
-        .game-wrapper { display: flex; gap: 40px; align-items: center; z-index: 5; opacity: 0; transition: 1s; }
-        canvas { 
-            background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); 
-            border-radius: 20px; width: 240px; height: 480px; transition: background 0.5s;
-        }
+        
+        .card { background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 320px; }
+        
+        #menu-btn { position: fixed; top: 20px; right: 20px; z-index: 1001; cursor: pointer; display: none; padding: 10px; }
+        .bar { width: 25px; height: 3px; background: #fff; margin: 5px 0; transition: 0.4s; }
+        
+        #side-menu { position: fixed; top: 0; right: -300px; width: 250px; height: 100%; background: rgba(10,10,10,0.95); backdrop-filter: blur(20px); z-index: 1000; transition: 0.5s; padding: 80px 20px; border-left: 1px solid rgba(255,255,255,0.1); }
+        #side-menu.active { right: 0; }
+        
+        .lvl-btn { width: 100%; text-align: left; background: var(--glass); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-weight: 800; }
+        .lvl-btn:hover { background: var(--accent); }
+        
+        .btn { background: #fff; color: #000; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-weight: 800; transition: 0.3s; margin: 8px; width: 80%; }
+        .btn:hover { transform: scale(1.05); background: var(--accent); color: #fff; }
+        
+        input { background: #111; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 12px; margin: 15px 0; width: 80%; text-align: center; outline: none; }
+        
+        .game-wrapper { display: flex; gap: 80px; align-items: center; z-index: 5; opacity: 0; transition: 1s; }
+        canvas { background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; width: 240px; height: 480px; }
+        
         .score-box { position: absolute; top: -65px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; }
         .sc-val { font-size: 36px; font-weight: 800; }
         .label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.4); }
-
-        #multi-pause-indicator {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: none; text-align: center; z-index: 100; pointer-events: none;
-        }
-
+        
+        /* Perbaikan CSS Next Container */
         #next-container { 
-            position: absolute; right: -100px; top: 0; text-align: center; 
-            display: none; background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+            position: absolute; 
+            left: 260px; 
+            top: 10px; 
+            text-align: center; 
+            display: none; 
+            background: var(--glass); 
+            padding: 20px; 
+            border-radius: 10px; 
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100px;
         }
         #next-canvas { background: transparent; width: 80px; height: 80px; border: none; }
-        #enemy-container { display: none; }
     </style>
 </head>
 <body>
 
+<div id="menu-btn" onclick="toggleSideMenu()"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+<div id="side-menu">
+    <h3 style="letter-spacing: 2px; margin-bottom: 20px;">SELECT LEVEL</h3>
+    <button class="lvl-btn" onclick="setLevel(1000)">EASY</button>
+    <button class="lvl-btn" onclick="setLevel(500)">MEDIUM</button>
+    <button class="lvl-btn" onclick="setLevel(200)">HARD</button>
+    <button class="lvl-btn" onclick="setLevel(50)" style="color: var(--danger);">WNI MODE</button>
+</div>
+
 <div id="lobby-overlay">
     <div class="card">
-        <h1 style="letter-spacing: 5px;">SOVEREIGN</h1>
-        <p class="label" style="margin-bottom: 30px;">Select Game Mode</p>
+        <h1>SOVEREIGN</h1>
         <button class="btn" onclick="startSoloMode()">SOLO PRACTICE</button>
-        <button class="btn btn-outline" onclick="showMultiplayerSetup()">MULTIPLAYER DUEL</button>
+        <button class="btn" style="background:transparent; color:#fff; border:1px solid #fff" onclick="showMultiplayerSetup()">MULTIPLAYER DUEL</button>
     </div>
 </div>
 
 <div id="setup-overlay">
     <div class="card">
-        <h1>DUEL SETUP</h1>
-        <p class="label">Your ID</p>
-        <h2 id="my-id" style="color:var(--accent); margin:0; font-size: 32px;">...</h2>
+        <h2>ID: <span id="my-id" style="color:var(--accent)">...</span></h2>
         <input type="text" id="peer-id" placeholder="Enter Enemy ID">
         <button class="btn" onclick="connectToEnemy()">START DUEL</button>
-        <button class="btn btn-outline" onclick="location.reload()">BACK</button>
     </div>
 </div>
 
 <div id="pause-overlay">
-    <div class="card">
-        <h1 style="letter-spacing: 5px; color: var(--accent);">PAUSED</h1>
-        <p id="pause-sub" class="label" style="margin-bottom: 30px;">Press P to Resume</p>
-        <button id="resume-btn" class="btn" onclick="togglePause()">RESUME</button>
-        <button class="btn btn-outline" onclick="location.reload()">QUIT</button>
-    </div>
+    <div class="card"><h1 style="color:var(--accent)">PAUSED</h1><button class="btn" onclick="togglePause()">RESUME</button></div>
 </div>
 
 <div id="game-over-overlay">
-    <div id="end-card" class="card">
-        <h1 id="res-msg" style="font-size:40px; margin:0;">RESULT</h1>
-        <div id="final-sc" style="font-size: 48px; font-weight: 800; margin: 10px 0;">0</div>
-        <div id="end-actions"></div>
-        <button class="btn btn-outline" onclick="location.reload()">MAIN MENU</button>
-        <p id="rematch-status" style="font-size:11px; margin-top:15px; color:var(--accent)"></p>
+    <div class="card">
+        <h1 id="res-msg">RESULT</h1>
+        <div id="final-sc" style="font-size: 48px; font-weight: 800;">0</div>
+        <button class="btn" onclick="location.reload()">MAIN MENU</button>
     </div>
 </div>
 
 <div class="game-wrapper" id="game-ui">
-    <div id="multi-pause-indicator">
-        <h2 style="letter-spacing: 10px; color: var(--accent); margin:0;">PAUSED</h2>
-        <p id="pause-owner-text" class="label">WAITING FOR PLAYER</p>
-    </div>
     <div style="position:relative">
-        <div class="score-box"><div><div class="label">Player</div><div id="l-score" class="sc-val">0</div></div></div>
+        <div class="score-box"><div><div class="label">Score</div><div id="l-score" class="sc-val">0</div></div></div>
         <canvas id="l-canvas" width="240" height="480"></canvas>
         <div id="next-container">
-            <div class="label" style="margin-bottom: 5px;">Next</div>
+            <div class="label" style="margin-bottom: 10px;">Next</div>
             <canvas id="next-canvas" width="100" height="100"></canvas>
         </div>
     </div>
-    <div id="enemy-container" style="position:relative">
+    <div id="enemy-container" style="position:relative; display:none">
         <div class="score-box"><div style="text-align:right; width:100%"><div class="label">Enemy</div><div id="r-score" class="sc-val">0</div></div></div>
         <canvas id="r-canvas" width="240" height="480"></canvas>
     </div>
 </div>
 
 <script>
-let COLORS = [null, '#007aff', '#ff9500', '#ffcc00', '#4cd964', '#5ac8fa', '#ff2d55', '#5856d6'];
-let BG_COLORS = ['rgba(10, 10, 10, 0.8)', 'rgba(20, 0, 0, 0.8)', 'rgba(0, 20, 0, 0.8)', 'rgba(0, 0, 25, 0.8)', 'rgba(20, 20, 0, 0.8)'];
-let peer, conn, isGameOver = false, isPaused = false, rematchReady = false, isSolo = false;
-let pauseInitiator = false, nextPiece = null;
-let rematchTimeout, alarmInterval;
-
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-function playSound(type) {
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    if (type === 'move') { osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.setValueAtTime(0.05, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
-    else if (type === 'rotate') { osc.frequency.setValueAtTime(400, audioCtx.currentTime); gain.gain.setValueAtTime(0.05, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
-    else if (type === 'drop') { osc.frequency.setValueAtTime(80, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
-    else if (type === 'clear') { osc.type = 'triangle'; osc.frequency.exponentialRampToValueAtTime(1046, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.3); }
-    else if (type === 'alarm') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.setValueAtTime(0.05, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.2); }
-}
-
-function startAlarm() {
-    if (alarmInterval || isSolo || !isGameOver) return;
-    document.getElementById('end-card').classList.add('alarm-active');
-    alarmInterval = setInterval(() => {
-        if (!isGameOver) { stopAlarm(); return; }
-        playSound('alarm');
-    }, 500);
-}
-
-function stopAlarm() {
-    clearInterval(alarmInterval);
-    alarmInterval = null;
-    document.getElementById('end-card').classList.remove('alarm-active');
-}
-
-function togglePause(remoteTrigger = false) {
-    if (isGameOver) return;
-    if (isPaused && !pauseInitiator && !remoteTrigger) return; 
-
-    isPaused = !isPaused;
-    if (isPaused) {
-        pauseInitiator = !remoteTrigger;
-        if (isSolo) {
-            document.getElementById('pause-overlay').style.display = 'flex';
-        } else {
-            document.getElementById('multi-pause-indicator').style.display = 'block';
-            document.getElementById('pause-owner-text').innerText = pauseInitiator ? "YOU PAUSED THE GAME" : "ENEMY PAUSED THE GAME";
-            document.getElementById('pause-overlay').style.display = 'flex';
-            document.getElementById('resume-btn').disabled = !pauseInitiator;
-            document.getElementById('pause-sub').innerText = pauseInitiator ? "Press P to Resume" : "Waiting for enemy to resume...";
-        }
-    } else {
-        document.getElementById('pause-overlay').style.display = 'none';
-        document.getElementById('multi-pause-indicator').style.display = 'none';
-        pauseInitiator = false;
-    }
-    if (!isSolo && conn && !remoteTrigger) conn.send({ type: 'pause', state: isPaused });
-}
-
-function startSoloMode() { 
-    audioCtx.resume(); isSolo = true;
-    document.getElementById('next-container').style.display = 'block';
-    initGame(true); 
-}
-
-function showMultiplayerSetup() {
-    document.getElementById('lobby-overlay').style.display = 'none';
-    document.getElementById('setup-overlay').style.display = 'flex';
-    const shortID = Math.random().toString(36).substring(2, 8).toUpperCase();
-    peer = new Peer(shortID);
-    peer.on('open', id => document.getElementById('my-id').innerText = id);
-    peer.on('connection', c => { conn = c; conn.on('open', () => initGame(false)); conn.on('data', d => handleData(d)); });
-}
-
-function connectToEnemy() {
-    const target = document.getElementById('peer-id').value.toUpperCase().trim();
-    if (!target) return;
-    conn = peer.connect(target, { reliable: true });
-    conn.on('open', () => initGame(false));
-    conn.on('data', d => handleData(d));
-}
-
-function initGame(solo) {
-    isSolo = solo;
-    document.getElementById('lobby-overlay').style.display = 'none';
-    document.getElementById('setup-overlay').style.display = 'none';
-    document.getElementById('game-ui').style.opacity = '1';
-    if (!solo) document.getElementById('enemy-container').style.display = 'block';
-    resetGameLogic();
-    gameLoop();
-}
-
-function handleData(d) {
-    if (d.type === 'state') updateRemote(d);
-    if (d.type === 'attack') receiveAttack(d.lines);
-    if (d.type === 'pause') togglePause(true);
-    if (d.type === 'gameOver') showEndScreen('YOU WIN', player.score);
-    if (d.type === 'rematch') { rematchReady = true; document.getElementById('rematch-status').innerText = "Enemy wants a rematch!"; startAlarm(); }
-    if (d.type === 'alarmTrigger') startAlarm();
-    if (d.type === 'startAgain') resetGameLogic();
-}
+const COLORS = [null, '#007aff', '#ff9500', '#ffcc00', '#4cd964', '#5ac8fa', '#ff2d55', '#5856d6'];
+let peer, conn, isGameOver = false, isPaused = false, isSolo = false;
+let arena = Array.from({length: 20}, () => new Array(10).fill(0));
+const player = { pos: {x: 0, y: 0}, matrix: null, score: 0 };
+let nextPiece = null;
+let dropCounter = 0, dropInterval = 400, lastTime = 0;
 
 const lCanvas = document.getElementById('l-canvas'), rCanvas = document.getElementById('r-canvas'), nCanvas = document.getElementById('next-canvas');
 const lCtx = lCanvas.getContext('2d'), rCtx = rCanvas.getContext('2d'), nCtx = nCanvas.getContext('2d');
 lCtx.scale(24, 24); rCtx.scale(24, 24); nCtx.scale(20, 20);
 
-let arena = Array.from({length: 20}, () => new Array(10).fill(0));
-const player = { pos: {x: 3, y: 0}, matrix: null, score: 0 };
-
 function createPiece(t) {
     if (t === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
-    if (t === 'T') return [[0,2,0],[2,2,2],[0,0,0]];
-    if (t === 'O') return [[3,3],[3,3]];
-    if (t === 'L') return [[0,4,0],[0,4,0],[0,4,4]];
-    if (t === 'J') return [[0,5,0],[0,5,0],[5,5,0]];
+    if (t === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
+    if (t === 'J') return [[0,3,0],[0,3,0],[3,3,0]];
+    if (t === 'O') return [[4,4],[4,4]];
+    if (t === 'Z') return [[5,5,0],[0,5,5],[0,0,0]];
     if (t === 'S') return [[0,6,6],[6,6,0],[0,0,0]];
-    if (t === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
-}
-
-function drawNext() {
-    nCtx.clearRect(0, 0, nCanvas.width, nCanvas.height);
-    if (!nextPiece) return;
-    nextPiece.forEach((row, y) => row.forEach((v, x) => {
-        if (v) { nCtx.fillStyle = COLORS[v]; nCtx.fillRect(x + 0.5, y + 0.5, 0.9, 0.9); }
-    }));
+    if (t === 'T') return [[0,7,0],[7,7,7],[0,0,0]];
 }
 
 function drawGhost() {
     const ghost = { pos: {...player.pos}, matrix: player.matrix };
     while (!collide(arena, ghost)) { ghost.pos.y++; }
     ghost.pos.y--;
-    lCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ghost.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) lCtx.fillRect(x + ghost.pos.x, y + ghost.pos.y, 0.95, 0.95); }));
+    lCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ghost.matrix.forEach((row, y) => row.forEach((v, x) => {
+        if (v) lCtx.fillRect(x + ghost.pos.x, y + ghost.pos.y, 0.95, 0.95);
+    }));
 }
 
-function playerReset() {
-    const pieces = 'ILJOTSZ';
-    if (!nextPiece) nextPiece = createPiece(pieces[pieces.length * Math.random() | 0]);
-    player.matrix = nextPiece;
-    nextPiece = createPiece(pieces[pieces.length * Math.random() | 0]);
-    player.pos = {y: 0, x: (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0)};
-    if (isSolo) drawNext();
-    if (collide(arena, player)) {
-        isGameOver = true;
-        if (!isSolo && conn) conn.send({ type: 'gameOver' });
-        showEndScreen(isSolo ? 'GAME OVER' : 'YOU LOSE', player.score);
-    }
-}
-
-function playerRotate() {
-    const pos = player.pos.x; let offset = 1; const pre = player.matrix;
-    player.matrix = player.matrix[0].map((_, i) => player.matrix.map(row => row[i]).reverse());
-    while (collide(arena, player)) {
-        player.pos.x += offset; offset = -(offset + (offset > 0 ? 1 : -1));
-        if (offset > player.matrix[0].length) { player.matrix = pre; player.pos.x = pos; return; }
-    }
-    playSound('rotate'); sendData();
+function draw(ctx, a, p, isLocal = false) {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 10, 20);
+    if (isLocal) drawGhost();
+    a.forEach((row, y) => row.forEach((v, x) => { if (v) { ctx.fillStyle = COLORS[v]; ctx.fillRect(x, y, 0.95, 0.95); } }));
+    p.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) { ctx.fillStyle = COLORS[v]; ctx.fillRect(x + p.pos.x, y + p.pos.y, 0.95, 0.95); } }));
 }
 
 function collide(a, p) {
@@ -299,131 +154,138 @@ function collide(a, p) {
     return false;
 }
 
-function sweep() {
-    let count = 0;
+function arenaSweep() {
     outer: for (let y = arena.length - 1; y > 0; --y) {
-        for (let x = 0; x < arena[y].length; ++x) if (arena[y][x] === 0) continue outer;
-        arena.splice(y, 1)[0].fill(0); arena.unshift(new Array(10).fill(0));
-        count++; y++;
+        for (let x = 0; x < arena[y].length; ++x) { if (arena[y][x] === 0) continue outer; }
+        arena.splice(y, 1)[0].fill(0);
+        arena.unshift(new Array(10).fill(0));
+        player.score += 100;
+        y++;
     }
-    if (count > 0) {
-        playSound('clear'); player.score += count * 100;
-        document.getElementById('l-score').innerText = player.score;
-        if (!isSolo && conn) conn.send({ type: 'attack', lines: count });
+    document.getElementById('l-score').innerText = player.score;
+}
+
+function playerDrop() {
+    player.pos.y++;
+    if (collide(arena, player)) {
+        player.pos.y--;
+        player.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) arena[y + player.pos.y][x + player.pos.x] = v; }));
+        arenaSweep();
+        playerReset();
+        if (!isSolo && conn) conn.send({ type: 'state', arena, player, score: player.score });
+    }
+    dropCounter = 0;
+}
+
+function playerReset() {
+    const pieces = 'ILJOTSZ';
+    if (!nextPiece) nextPiece = createPiece(pieces[Math.random() * pieces.length | 0]);
+    player.matrix = nextPiece;
+    nextPiece = createPiece(pieces[Math.random() * pieces.length | 0]);
+    player.pos.y = 0;
+    player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+    if (isSolo) drawNext();
+    if (collide(arena, player)) {
+        isGameOver = true;
+        document.getElementById('res-msg').innerText = "GAME OVER";
+        document.getElementById('res-msg').style.color = "var(--danger)";
+        document.getElementById('final-sc').innerText = player.score;
+        document.getElementById('game-over-overlay').style.display = 'flex';
     }
 }
 
-function receiveAttack(lines) {
-    for (let i = 0; i < lines; i++) {
-        const row = new Array(10).fill(8); row[Math.floor(Math.random() * 10)] = 0;
-        arena.shift(); arena.push(row);
+function drawNext() {
+    nCtx.fillStyle = '#000'; nCtx.fillRect(0, 0, 5, 5);
+    nextPiece.forEach((row, y) => row.forEach((v, x) => {
+        if (v) { nCtx.fillStyle = COLORS[v]; nCtx.fillRect(x + 0.5, y + 0.5, 0.9, 0.9); }
+    }));
+}
+
+function playerRotate() {
+    const pos = player.pos.x; let offset = 1;
+    const m = player.matrix;
+    for (let y = 0; y < m.length; ++y) { for (let x = 0; x < y; ++x) { [m[x][y], m[y][x]] = [m[y][x], m[x][y]]; } }
+    m.forEach(row => row.reverse());
+    while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > m[0].length) { 
+            m.forEach(row => row.reverse());
+            for (let y = 0; y < m.length; ++y) { for (let x = 0; x < y; ++x) { [m[x][y], m[y][x]] = [m[y][x], m[x][y]]; } }
+            player.pos.x = pos; return;
+        }
     }
 }
 
-function showEndScreen(msg, sc) {
-    isGameOver = true;
-    const resMsg = document.getElementById('res-msg');
-    resMsg.innerText = msg;
-    
-    // Logika warna teks dinamis berdasarkan hasil
-    if (msg.includes('WIN') || msg.includes('VICTORY')) {
-        resMsg.style.color = 'var(--success)';
-    } else {
-        resMsg.style.color = 'var(--danger)';
-    }
-
-    document.getElementById('final-sc').innerText = sc;
-    const actions = document.getElementById('end-actions');
-    actions.innerHTML = '';
-    
-    if (isSolo) {
-        const btn = document.createElement('button');
-        btn.className = 'btn'; btn.innerText = 'PLAY AGAIN';
-        btn.onclick = () => resetGameLogic();
-        actions.appendChild(btn);
-    } else {
-        const btn = document.createElement('button');
-        btn.className = 'btn'; btn.id = 'rematch-btn'; btn.innerText = 'REMATCH';
-        btn.onclick = () => requestRematch();
-        actions.appendChild(btn);
-    }
-    document.getElementById('game-over-overlay').style.display = 'flex';
+function togglePause() {
+    isPaused = !isPaused;
+    document.getElementById('pause-overlay').style.display = isPaused ? 'flex' : 'none';
+    if (!isPaused) { lastTime = performance.now(); gameUpdate(); }
 }
 
-function requestRematch() {
-    stopAlarm();
-    if (rematchReady) { 
-        if (conn) conn.send({ type: 'startAgain' }); 
-        resetGameLogic(); 
-    } else { 
-        if (conn) conn.send({ type: 'rematch' }); 
-        document.getElementById('rematch-status').innerText = "Waiting for enemy...";
-        clearTimeout(rematchTimeout);
-        rematchTimeout = setTimeout(() => {
-            if (!rematchReady && conn && isGameOver) conn.send({ type: 'alarmTrigger' });
-        }, 5000);
-    }
-}
-
-function resetGameLogic() {
-    stopAlarm();
-    clearTimeout(rematchTimeout);
-    isGameOver = false; isPaused = false; nextPiece = null; rematchReady = false;
-    arena = Array.from({length: 20}, () => new Array(10).fill(0));
-    player.score = 0;
-    
-    const newBg = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
-    lCanvas.style.background = newBg;
-    if (!isSolo) rCanvas.style.background = newBg;
-
-    document.getElementById('l-score').innerText = "0";
-    document.getElementById('game-over-overlay').style.display = 'none';
-    document.getElementById('pause-overlay').style.display = 'none';
-    document.getElementById('multi-pause-indicator').style.display = 'none';
-    document.getElementById('rematch-status').innerText = "";
-    playerReset();
-}
-
-function sendData() { if (!isSolo && conn && conn.open) conn.send({ type: 'state', arena, player, score: player.score }); }
-
-function draw(ctx, a, p, isLocal = false) {
-    ctx.clearRect(0,0,10,20);
-    if (isLocal && !isGameOver) drawGhost();
-    a.forEach((row, y) => row.forEach((v, x) => { if (v) { ctx.fillStyle = v === 8 ? '#333' : COLORS[v]; ctx.fillRect(x, y, 0.95, 0.95); } }));
-    if (p.matrix) p.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) { ctx.fillStyle = COLORS[v]; ctx.fillRect(x + p.pos.x, y + p.pos.y, 0.95, 0.95); } }));
-}
-
-function updateRemote(d) { draw(rCtx, d.arena, d.player); document.getElementById('r-score').innerText = d.score; }
-
-let dropCounter = 0, lastTime = 0, keys = {}, moveCounter = 0;
-
-function gameLoop(time = 0) {
-    if (isGameOver || isPaused) { requestAnimationFrame(gameLoop); return; }
-    const dt = time - lastTime; lastTime = time;
-    dropCounter += dt; moveCounter += dt;
-    if (moveCounter > 90) {
-        if (keys['ArrowLeft']) { player.pos.x--; if(collide(arena, player)) player.pos.x++; else { playSound('move'); sendData(); } }
-        if (keys['ArrowRight']) { player.pos.x++; if(collide(arena, player)) { player.pos.x--; } else { playSound('move'); sendData(); } }
-        if (keys['ArrowDown']) { player.pos.y++; if(collide(arena, player)) { player.pos.y--; merge(); } else { playSound('move'); sendData(); } }
-        moveCounter = 0;
-    }
-    if (dropCounter > 800) { player.pos.y++; if (collide(arena, player)) { player.pos.y--; merge(); } dropCounter = 0; sendData(); }
+function gameUpdate(time = 0) {
+    if (isGameOver || isPaused) return;
+    const deltaTime = time - lastTime; lastTime = time;
+    dropCounter += deltaTime;
+    if (dropCounter > dropInterval) playerDrop();
     draw(lCtx, arena, player, true);
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(gameUpdate);
 }
 
-function merge() { playSound('drop'); player.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) arena[y + player.pos.y][x + player.pos.x] = v; })); sweep(); playerReset(); }
+function startSoloMode() { 
+    isSolo = true; document.getElementById('lobby-overlay').style.display = 'none';
+    document.getElementById('game-ui').style.opacity = '1';
+    document.getElementById('next-container').style.display = 'block';
+    document.getElementById('menu-btn').style.display = 'block';
+    playerReset(); gameUpdate();
+}
 
-window.addEventListener('keydown', e => { 
+function toggleSideMenu() { document.getElementById('side-menu').classList.toggle('active'); }
+function setLevel(speed) { dropInterval = speed; toggleSideMenu(); }
+
+window.addEventListener('keydown', e => {
+    if (isGameOver) return;
     if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
-    if (isGameOver || isPaused) return; 
-    if (e.code === 'ArrowUp') playerRotate(); 
-    if (e.code === 'Space') { while (!collide(arena, player)) { player.pos.y++; } player.pos.y--; merge(); sendData(); } 
-    keys[e.code] = true; 
+    if (isPaused) return;
+    if (e.code === 'ArrowLeft') { player.pos.x--; if (collide(arena, player)) player.pos.x++; }
+    if (e.code === 'ArrowRight') { player.pos.x++; if (collide(arena, player)) { player.pos.x--; } }
+    if (e.code === 'ArrowDown') playerDrop();
+    if (e.code === 'ArrowUp') playerRotate();
+    if (e.code === 'Space') { while (!collide(arena, player)) { player.pos.y++; } player.pos.y--; playerDrop(); }
 });
-window.addEventListener('keyup', e => keys[e.code] = false);
 
-playerReset();
+function showMultiplayerSetup() {
+    document.getElementById('lobby-overlay').style.display = 'none';
+    document.getElementById('setup-overlay').style.display = 'flex';
+    peer = new Peer(Math.random().toString(36).substr(2, 5).toUpperCase());
+    peer.on('open', id => document.getElementById('my-id').innerText = id);
+    peer.on('connection', c => { 
+        conn = c; 
+        conn.on('open', () => {
+            document.getElementById('enemy-container').style.display = 'block';
+            document.getElementById('setup-overlay').style.display = 'none';
+            document.getElementById('game-ui').style.opacity = '1';
+            playerReset(); gameUpdate();
+        });
+        conn.on('data', d => { if (d.type === 'state') {
+            rCtx.fillStyle = '#000'; rCtx.fillRect(0, 0, 10, 20);
+            d.arena.forEach((row, y) => row.forEach((v, x) => { if (v) { rCtx.fillStyle = COLORS[v]; rCtx.fillRect(x, y, 0.95, 0.95); } }));
+            d.player.matrix.forEach((row, y) => row.forEach((v, x) => { if (v) { rCtx.fillStyle = COLORS[v]; rCtx.fillRect(x + d.player.pos.x, y + d.player.pos.y, 0.95, 0.95); } }));
+            document.getElementById('r-score').innerText = d.score;
+        }});
+    });
+}
+
+function connectToEnemy() {
+    const id = document.getElementById('peer-id').value.toUpperCase();
+    conn = peer.connect(id);
+    conn.on('open', () => {
+        document.getElementById('enemy-container').style.display = 'block';
+        document.getElementById('setup-overlay').style.display = 'none';
+        document.getElementById('game-ui').style.opacity = '1';
+        playerReset(); gameUpdate();
+    });
+}
 </script>
 </body>
 </html>
